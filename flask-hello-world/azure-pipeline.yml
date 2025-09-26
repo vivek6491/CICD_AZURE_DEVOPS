@@ -1,0 +1,48 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  imageName: 'flaskhelloworld'
+  tag: '$(Build.BuildId)'
+  acrLoginServer: 'vivekdemoapp.azurecr.io'
+  webAppName: 'flaskhelloapp'
+  resourceGroup: 'V1_group'
+
+stages:
+- stage: Build
+  jobs:
+  - job: BuildAndPush
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: Docker@2
+      displayName: Build and Push Docker Image
+      inputs:
+        containerRegistry: 'MyACRServiceConnection'
+        repository: '$(imageName)'
+        command: 'buildAndPush'
+        Dockerfile: 'Dockerfile'
+        tags: |
+          $(tag)
+
+- stage: Deploy
+  dependsOn: Build
+  jobs:
+  - job: DeployToWebApp
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'MyAzureServiceConnection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Updating Web App container image..."
+          az webapp config container set \
+            --name $(webAppName) \
+            --resource-group $(resourceGroup) \
+            --docker-custom-image-name $(acrLoginServer)/$(imageName):$(tag) \
+            --docker-registry-server-url https://$(acrLoginServer)
