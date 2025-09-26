@@ -23,7 +23,7 @@ stages:
         containerRegistry: 'MyACRServiceConnection'
         repository: '$(imageName)'
         command: 'buildAndPush'
-        Dockerfile: 'Dockerfile'
+        Dockerfile: 'flask-hello-world/Dockerfile'
         tags: |
           $(tag)
 
